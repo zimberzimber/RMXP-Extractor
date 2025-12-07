@@ -1,16 +1,4 @@
-/.bundle/
-/.yardoc
-/_yardoc/
-/coverage/
-/doc/
-/pkg/
-/spec/reports/
-/tmp/
-Data*/*
-Scripts/*
-
-ins1
-ins2
-
-# rspec failure tracking
-.rspec_status
+target/
+original.rxdata
+test.json
+test.rxdata

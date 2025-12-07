@@ -1,0 +1,293 @@
+use alox_48::Value;
+use serde::de::Error;
+
+pub struct DeserializeValue(pub Value);
+
+struct Visitor;
+
+impl<'de> serde::de::Visitor<'de> for Visitor {
+    type Value = Value;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("any value")
+    }
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::Nil)
+    }
+
+    fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::Bool(v))
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::Float(v))
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(Value::Integer(v as _))
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(Value::Integer(v as _))
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::String(alox_48::RbString::from(v)))
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::String(alox_48::RbString::from(v)))
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::SeqAccess<'de>,
+    {
+        let mut array = alox_48::RbArray::new();
+        while let Some(value) = seq.next_element::<DeserializeValue>()? {
+            array.push(value.0)
+        }
+        Ok(Value::Array(array))
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::MapAccess<'de>,
+    {
+        let Some(key): Option<&str> = map.next_key()? else {
+            return Err(A::Error::custom("expected a key"));
+        };
+        let value = match key {
+            "$symbol" => Value::Symbol(map.next_value::<&str>()?.into()),
+            "$hash" => Value::Hash(map.next_value::<DeserializeHash>()?.0),
+            "$userdata" => Value::Userdata(map.next_value::<DeserializeUserdata>()?.into()),
+            "$object" => Value::Object(map.next_value::<DeserializeObject>()?.into()),
+            "$instance" => Value::Instance(map.next_value::<DeserializeInstance>()?.into()),
+            "$regex" => map.next_value::<DeserializeRegex>()?.into(),
+            "$struct" => Value::RbStruct(map.next_value::<DeserializeStruct>()?.into()),
+            "$class" => Value::Class(map.next_value::<&str>()?.into()),
+            "$module" => Value::Module(map.next_value::<&str>()?.into()),
+            "$extended" => map.next_value::<DeserializeExtended>()?.into(),
+            "$userclass" => map.next_value::<DeserializeUsertype>()?.into_uclass(),
+            "$usermarshal" => map.next_value::<DeserializeUsertype>()?.into_umarshal(),
+            "$cdata" => map.next_value::<DeserializeUsertype>()?.into_cdata(),
+            _ => return Err(A::Error::custom("invalid data type")),
+        };
+
+        Ok(value)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for DeserializeValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(Visitor).map(Self)
+    }
+}
+
+struct DeserializeHash(alox_48::RbHash);
+
+struct HashVisitor;
+
+impl<'de> serde::de::Visitor<'de> for HashVisitor {
+    type Value = alox_48::RbHash;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a map")
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::MapAccess<'de>,
+    {
+        let mut fields = alox_48::RbHash::new();
+        while let Some((k, v)) = map.next_entry::<DeserializeValue, DeserializeValue>()? {
+            fields.insert(k.0, v.0);
+        }
+        Ok(fields)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for DeserializeHash {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(HashVisitor).map(Self)
+    }
+}
+
+struct DeserializeFields(alox_48::RbFields);
+
+struct FieldsVisitor;
+
+impl<'de> serde::de::Visitor<'de> for FieldsVisitor {
+    type Value = alox_48::RbFields;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a map")
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::MapAccess<'de>,
+    {
+        let mut fields = alox_48::RbFields::new();
+        while let Some((k, v)) = map.next_entry::<&str, DeserializeValue>()? {
+            fields.insert(alox_48::Symbol::from(k), v.0);
+        }
+        Ok(fields)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for DeserializeFields {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(FieldsVisitor).map(Self)
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct DeserializeUserdata {
+    class: String,
+    data: Vec<u8>,
+}
+
+impl From<DeserializeUserdata> for alox_48::Userdata {
+    fn from(val: DeserializeUserdata) -> Self {
+        alox_48::Userdata {
+            class: val.class.into(),
+            data: val.data,
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct DeserializeObject {
+    class: String,
+    fields: DeserializeFields,
+}
+
+impl From<DeserializeObject> for alox_48::Object {
+    fn from(val: DeserializeObject) -> Self {
+        alox_48::Object {
+            class: val.class.into(),
+            fields: val.fields.0,
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct DeserializeInstance {
+    value: DeserializeValue,
+    fields: DeserializeFields,
+}
+
+impl From<DeserializeInstance> for alox_48::Instance<Box<Value>> {
+    fn from(val: DeserializeInstance) -> Self {
+        alox_48::Instance {
+            value: Box::new(val.value.0),
+            fields: val.fields.0,
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct DeserializeRegex {
+    data: String,
+    flags: u8,
+}
+
+impl From<DeserializeRegex> for alox_48::Value {
+    fn from(val: DeserializeRegex) -> Self {
+        alox_48::Value::Regex {
+            data: val.data.into(),
+            flags: val.flags,
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct DeserializeStruct {
+    class: String,
+    fields: DeserializeFields,
+}
+
+impl From<DeserializeStruct> for alox_48::RbStruct {
+    fn from(val: DeserializeStruct) -> Self {
+        alox_48::RbStruct {
+            class: val.class.into(),
+            fields: val.fields.0,
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct DeserializeExtended {
+    module: String,
+    value: DeserializeValue,
+}
+
+impl From<DeserializeExtended> for alox_48::Value {
+    fn from(val: DeserializeExtended) -> Self {
+        alox_48::Value::Extended {
+            module: val.module.into(),
+            value: Box::new(val.value.0),
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct DeserializeUsertype {
+    class: String,
+    value: DeserializeValue,
+}
+
+impl DeserializeUsertype {
+    fn into_uclass(self) -> alox_48::Value {
+        alox_48::Value::UserClass {
+            class: self.class.into(),
+            value: Box::new(self.value.0),
+        }
+    }
+
+    fn into_umarshal(self) -> alox_48::Value {
+        alox_48::Value::UserMarshal {
+            class: self.class.into(),
+            value: Box::new(self.value.0),
+        }
+    }
+
+    fn into_cdata(self) -> alox_48::Value {
+        alox_48::Value::Data {
+            class: self.class.into(),
+            value: Box::new(self.value.0),
+        }
+    }
+}
