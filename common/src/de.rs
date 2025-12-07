@@ -110,7 +110,6 @@ impl<'de> serde::Deserialize<'de> for DeserializeValue {
 }
 
 struct DeserializeHash(alox_48::RbHash);
-
 struct HashVisitor;
 
 impl<'de> serde::de::Visitor<'de> for HashVisitor {
@@ -174,6 +173,7 @@ impl<'de> serde::Deserialize<'de> for DeserializeFields {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename = "Userdata")]
 struct DeserializeUserdata {
     class: String,
     data: Vec<u8>,
@@ -189,6 +189,7 @@ impl From<DeserializeUserdata> for alox_48::Userdata {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename = "Object")]
 struct DeserializeObject {
     class: String,
     fields: DeserializeFields,
@@ -204,6 +205,7 @@ impl From<DeserializeObject> for alox_48::Object {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename = "Instance")]
 struct DeserializeInstance {
     value: DeserializeValue,
     fields: DeserializeFields,
@@ -219,6 +221,7 @@ impl From<DeserializeInstance> for alox_48::Instance<Box<Value>> {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename = "Regex")]
 struct DeserializeRegex {
     data: String,
     flags: u8,
@@ -234,6 +237,7 @@ impl From<DeserializeRegex> for alox_48::Value {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename = "Struct")]
 struct DeserializeStruct {
     class: String,
     fields: DeserializeFields,
@@ -249,6 +253,7 @@ impl From<DeserializeStruct> for alox_48::RbStruct {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename = "Extended")]
 struct DeserializeExtended {
     module: String,
     value: DeserializeValue,
@@ -264,6 +269,7 @@ impl From<DeserializeExtended> for alox_48::Value {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename = "Usertype")]
 struct DeserializeUsertype {
     class: String,
     value: DeserializeValue,
