@@ -6,6 +6,10 @@ edition = "2024"
 [dependencies]
 clap.workspace = true
 alox-48.workspace = true
+
 serde.workspace = true
 serde_json.workspace = true
+ron.workspace = true
+serde_yaml_ng.workspace = true
+
 common.workspace = true

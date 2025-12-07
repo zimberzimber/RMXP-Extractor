@@ -1,36 +1,28 @@
 use std::{io::Write, path::PathBuf};
 
 use alox_48::Value;
-use clap::Parser;
+use clap::{CommandFactory, Parser, error::ErrorKind};
 use serde::Serialize;
 
+use common::{DeserializeValue, Format, SerializeValue};
+
+// TODO stdin?
 /// Converts Ruby marshal files to other formats, and vice versa.
 #[derive(Parser)]
 struct Args {
     /// The input file.
-    ///
-    /// Leave blank to read from STDIN
     #[arg(long, visible_short_alias = 'i')]
     input: PathBuf,
     /// The output file.
-    ///
-    /// Leave blank to write to STDOUT
     #[arg(long, visible_short_alias = 'o')]
     output: PathBuf,
     /// The formats to convert from/to.
     ///
     /// Input comes first.
-    #[arg(long, visible_short_alias = 'f', number_of_values = 2, required = true)]
-    format: Vec<Format>,
-}
-
-#[derive(Debug, Clone, Copy, clap::ValueEnum)]
-enum Format {
-    Json,
-    Marshal,
-    Ron,
-    Yaml,
-    Toml,
+    ///
+    /// Required if the format cannot be determined via file extensions.
+    #[arg(long, visible_short_alias = 'f', number_of_values = 2)]
+    format: Option<Vec<Format>>,
 }
 
 fn main() {
@@ -40,19 +32,35 @@ fn main() {
         format,
     } = Args::parse();
 
-    #[allow(unused)]
-    let [to, from] = format
-        .try_into()
-        .expect("should only be 2 (clap limitation)");
+    let [to, from] = match format.as_deref() {
+        Some(&[to, from]) => [to, from],
+        None => {
+            let Some((to, from)) = Format::guess(&input).zip(Format::guess(&output)) else {
+                let mut command = Args::command();
+                command
+                    .error(ErrorKind::DisplayHelp, "unable to determine format")
+                    .exit()
+            };
+            [to, from]
+        }
+        _ => unreachable!(), // we enforce the number of values in clap
+    };
 
     let input = std::fs::read(input).unwrap();
     let value: Value = match to {
         Format::Marshal => alox_48::from_bytes(&input).unwrap(),
         Format::Json => {
-            let value: common::DeserializeValue = serde_json::from_slice(&input).unwrap();
+            let value: DeserializeValue = serde_json::from_slice(&input).unwrap();
             value.0
         }
-        _ => todo!(),
+        Format::Ron => {
+            let value: DeserializeValue = ron::Options::default().from_bytes(&input).unwrap();
+            value.0
+        }
+        Format::Yaml => {
+            let value: DeserializeValue = serde_yaml_ng::from_slice(&input).unwrap();
+            value.0
+        }
     };
 
     let mut output = std::fs::File::create(output).unwrap();
@@ -63,8 +71,17 @@ fn main() {
         }
         Format::Json => {
             let mut ser = serde_json::Serializer::pretty(output);
-            common::SerializeValue(&value).serialize(&mut ser).unwrap();
+            SerializeValue(&value).serialize(&mut ser).unwrap();
         }
-        _ => todo!(),
+        Format::Ron => {
+            let config = ron::ser::PrettyConfig::default();
+            ron::Options::default()
+                .to_io_writer_pretty(output, &SerializeValue(&value), config)
+                .unwrap();
+        }
+        Format::Yaml => {
+            let mut ser = serde_yaml_ng::Serializer::new(output);
+            SerializeValue(&value).serialize(&mut ser).unwrap();
+        }
     }
 }

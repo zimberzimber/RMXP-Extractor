@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 alox-48.workspace = true
 serde.workspace = true
+clap.workspace = true

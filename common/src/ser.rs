@@ -130,7 +130,6 @@ struct SerializeUsertype<'a> {
     value: SerializeValue<'a>,
 }
 
-#[allow(unused)]
 impl serde::Serialize for SerializeValue<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -151,25 +150,25 @@ impl serde::Serialize for SerializeValue<'_> {
             Value::Hash(index_map) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_key("$hash")?;
-                map.serialize_value(&SerializeHash(index_map));
+                map.serialize_value(&SerializeHash(index_map))?;
                 map.end()
             }
             Value::Userdata(userdata) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_key("$userdata")?;
-                map.serialize_value::<SerializeUserdata>(&userdata.into());
+                map.serialize_value::<SerializeUserdata>(&userdata.into())?;
                 map.end()
             }
             Value::Object(object) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_key("$object")?;
-                map.serialize_value::<SerializeObject>(&object.into());
+                map.serialize_value::<SerializeObject>(&object.into())?;
                 map.end()
             }
             Value::Instance(instance) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_key("$instance")?;
-                map.serialize_value::<SerializeInstance>(&instance.into());
+                map.serialize_value::<SerializeInstance>(&instance.into())?;
                 map.end()
             }
             Value::Regex { data, flags } => {
@@ -184,7 +183,7 @@ impl serde::Serialize for SerializeValue<'_> {
             Value::RbStruct(rb_struct) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_key("$struct")?;
-                map.serialize_value::<SerializeStruct>(&rb_struct.into());
+                map.serialize_value::<SerializeStruct>(&rb_struct.into())?;
                 map.end()
             }
             Value::Class(symbol) => {
