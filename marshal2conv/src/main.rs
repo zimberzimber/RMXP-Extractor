@@ -1,3 +1,5 @@
+#![warn(clippy::unwrap_used)]
+
 use clap::{CommandFactory, Parser, error::ErrorKind};
 use common::Format;
 use std::path::PathBuf;
@@ -39,7 +41,21 @@ fn main() {
         _ => unreachable!(), // we enforce the number of values in clap
     };
 
-    let input = std::fs::File::open(src).unwrap();
-    let output = std::fs::File::create(dest).unwrap();
-    common::conv_io(from, to, input, output);
+    let input = match std::fs::File::open(&src) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("failed to read {}: {e}", src.display());
+            return;
+        }
+    };
+    let output = match std::fs::File::open(&dest) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("failed to read {}: {e}", dest.display());
+            return;
+        }
+    };
+    if let Err(e) = common::conv_io(from, to, input, output) {
+        eprintln!("failed to convert: {e}");
+    }
 }

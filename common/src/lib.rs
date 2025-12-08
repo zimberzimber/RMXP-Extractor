@@ -1,3 +1,5 @@
+#![warn(clippy::unwrap_used)]
+
 mod ser;
 pub use ser::SerializeValue;
 
@@ -42,7 +44,25 @@ impl Format {
     }
 }
 
-pub fn conv_io<R, W>(from: Format, to: Format, mut input: R, mut output: W)
+#[derive(Debug, thiserror::Error)]
+pub enum ConvError {
+    #[error("{0}")]
+    MarshalDe(#[from] alox_48::DeError),
+    #[error("{0}")]
+    MarshalSer(#[from] alox_48::SerError),
+    #[error("{0}")]
+    Json(#[from] serde_json::Error),
+    #[error("{0}")]
+    RonDe(#[from] ron::de::SpannedError),
+    #[error("{0}")]
+    Ron(#[from] ron::Error),
+    #[error("{0}")]
+    Yaml(#[from] serde_yaml_ng::Error),
+    #[error("{0}")]
+    Io(#[from] std::io::Error),
+}
+
+pub fn conv_io<R, W>(from: Format, to: Format, mut input: R, mut output: W) -> Result<(), ConvError>
 where
     R: Read,
     W: Write,
@@ -50,41 +70,41 @@ where
     let value: alox_48::Value = match from {
         Format::Marshal => {
             let mut data = vec![];
-            input.read_to_end(&mut data).unwrap();
-            alox_48::from_bytes(&data).unwrap()
+            input.read_to_end(&mut data)?;
+            alox_48::from_bytes(&data)?
         }
         Format::Json => {
-            let value: DeserializeValue = serde_json::from_reader(input).unwrap();
+            let value: DeserializeValue = serde_json::from_reader(input)?;
             value.0
         }
         Format::Ron => {
-            let value: DeserializeValue = ron::Options::default().from_reader(input).unwrap();
+            let value: DeserializeValue = ron::Options::default().from_reader(input)?;
             value.0
         }
         Format::Yaml => {
-            let value: DeserializeValue = serde_yaml_ng::from_reader(input).unwrap();
+            let value: DeserializeValue = serde_yaml_ng::from_reader(input)?;
             value.0
         }
     };
 
     match to {
         Format::Marshal => {
-            let data = alox_48::to_bytes(value).unwrap();
-            output.write_all(&data).unwrap();
+            let data = alox_48::to_bytes(value)?;
+            output.write_all(&data)?;
         }
         Format::Json => {
             let mut ser = serde_json::Serializer::pretty(output);
-            SerializeValue(&value).serialize(&mut ser).unwrap();
+            SerializeValue(&value).serialize(&mut ser)?;
         }
         Format::Ron => {
             let config = ron::ser::PrettyConfig::default();
-            ron::Options::default()
-                .to_io_writer_pretty(output, &SerializeValue(&value), config)
-                .unwrap();
+            ron::Options::default().to_io_writer_pretty(output, &SerializeValue(&value), config)?;
         }
         Format::Yaml => {
             let mut ser = serde_yaml_ng::Serializer::new(output);
-            SerializeValue(&value).serialize(&mut ser).unwrap();
+            SerializeValue(&value).serialize(&mut ser)?;
         }
     }
+
+    Ok(())
 }

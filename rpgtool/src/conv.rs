@@ -3,6 +3,16 @@ use common::Format;
 
 use super::{Cli, ConvArgs};
 
+macro_rules! yeet {
+    ($fail_on_error:expr) => {
+        if $fail_on_error {
+            return;
+        } else {
+            continue;
+        }
+    };
+}
+
 #[allow(unused)]
 pub fn convert(args: ConvArgs) {
     let ConvArgs {
@@ -46,26 +56,56 @@ pub fn convert(args: ConvArgs) {
         return;
     }
 
-    let mut read_dir = std::fs::read_dir(&src).unwrap();
+    let mut read_dir = match std::fs::read_dir(&src) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("failed to read {}: {e}", src.display());
+            return;
+        }
+    };
+
     for entry in read_dir {
-        let entry = entry.unwrap();
+        let entry = match entry {
+            Ok(e) => e,
+            Err(e) => {
+                eprintln!("failed to read directory entry: {e}");
+                yeet!(fail_on_error)
+            }
+        };
+
         let src_path = entry.path();
         // if not a file *or* the file extension does not match what it should, print warning and continue
-        if !entry.file_type().unwrap().is_file()
+        if !entry.file_type().expect("couldn't get file type").is_file()
             || src_path.extension().is_none_or(|ext| ext != input_file_ext)
         {
             eprintln!("[WARN]: Ignoring {}", src_path.display());
             continue;
         }
 
-        let filename = src_path.file_name().unwrap();
+        let filename = src_path.file_name().expect("entry should have a file name");
         let dest_path = dest.join(filename).with_extension(output_file_ext);
 
-        let input = std::fs::File::open(src_path).unwrap();
+        let input = match std::fs::File::open(&src_path) {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("couldn't open {}", src_path.display());
+                yeet!(fail_on_error)
+            }
+        };
         let input = std::io::BufReader::new(input);
-        let output = std::fs::File::create(dest_path).unwrap();
+
+        let output = match std::fs::File::open(&dest_path) {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("couldn't open {}", dest_path.display());
+                yeet!(fail_on_error)
+            }
+        };
         let output = std::io::BufWriter::new(output);
 
-        common::conv_io(from, to, input, output);
+        if let Err(e) = common::conv_io(from, to, input, output) {
+            eprintln!("failed to convert {}: {e}", src_path.display());
+            yeet!(fail_on_error)
+        }
     }
 }

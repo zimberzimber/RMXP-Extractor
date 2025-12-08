@@ -1,3 +1,5 @@
+#![warn(clippy::unwrap_used)]
+
 use clap::Parser;
 use common::Format;
 use std::path::PathBuf;
