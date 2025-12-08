@@ -12,7 +12,7 @@ serde_json.workspace = true
 ron.workspace = true
 serde_yaml_ng.workspace = true
 
-common.workspace = true
+rpgtool-common.workspace = true
 
 indicatif = "0.18.3"
 flate2 = "1.1.5"

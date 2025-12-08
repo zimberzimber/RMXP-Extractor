@@ -153,19 +153,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
-name = "common"
-version = "0.1.0"
-dependencies = [
- "alox-48",
- "clap",
- "ron",
- "serde",
- "serde_json",
- "serde_yaml_ng",
- "thiserror 2.0.17",
-]
-
-[[package]]
 name = "console"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -354,8 +341,8 @@ version = "0.1.0"
 dependencies = [
  "alox-48",
  "clap",
- "common",
  "ron",
+ "rpgtool-common",
  "serde",
  "serde_json",
  "serde_yaml_ng",
@@ -463,13 +450,26 @@ version = "0.1.0"
 dependencies = [
  "alox-48",
  "clap",
- "common",
  "flate2",
  "indicatif",
+ "ron",
+ "rpgtool-common",
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+]
+
+[[package]]
+name = "rpgtool-common"
+version = "0.1.0"
+dependencies = [
+ "alox-48",
+ "clap",
  "ron",
  "serde",
  "serde_json",
  "serde_yaml_ng",
+ "thiserror 2.0.17",
 ]
 
 [[package]]

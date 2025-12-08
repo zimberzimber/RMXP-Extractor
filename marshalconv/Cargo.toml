@@ -12,4 +12,4 @@ serde_json.workspace = true
 ron.workspace = true
 serde_yaml_ng.workspace = true
 
-common.workspace = true
+rpgtool-common.workspace = true

@@ -1,5 +1,7 @@
 #![warn(clippy::unwrap_used)]
 
+extern crate rpgtool_common as common;
+
 use clap::{CommandFactory, Parser, error::ErrorKind};
 use common::Format;
 use std::path::PathBuf;
