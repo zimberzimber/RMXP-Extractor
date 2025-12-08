@@ -37,13 +37,17 @@ struct ConvArgs {
     #[arg(long, visible_short_alias = 'f', number_of_values = 2)]
     format: Option<Vec<Format>>,
     /// Exit on error instead of ignoring it.
-    #[arg(long = "fail_fast")]
+    #[arg(long = "fail-fast")]
     fail_on_error: bool,
-    #[arg(long)]
-    /// The file extension every *input* file uses.
+    #[arg(long = "output-ext")]
+    /// The file extension every input file uses.
+    ///
+    /// Optional, does not have to be specified.
     input_file_ext: Option<PathBuf>,
-    #[arg(long)]
-    /// The file extension every *output* file uses.
+    #[arg(long = "input-ext")]
+    /// The file extension every output file uses.
+    ///
+    // Optional, does not have to be specified.
     output_file_ext: Option<PathBuf>,
 }
 
