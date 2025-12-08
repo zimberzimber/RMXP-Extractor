@@ -353,8 +353,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "rpg2conv"
+name = "rpgtool"
 version = "0.1.0"
+dependencies = [
+ "alox-48",
+ "clap",
+ "common",
+ "ron",
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+]
 
 [[package]]
 name = "ryu"
