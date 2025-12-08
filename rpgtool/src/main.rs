@@ -5,6 +5,9 @@ use common::Format;
 use std::path::PathBuf;
 
 mod conv;
+mod pack;
+mod script;
+mod unpack;
 
 /// Utility for working with RPG Maker XP - VX Ace projects.
 #[derive(Parser)]
@@ -18,9 +21,9 @@ enum Commands {
     /// Convert an entire project to another data format.
     Convert(ConvArgs),
     /// Unpack a scripts file into a directory.
-    Unpack(ScriptArgs),
+    Unpack(UnpackScriptArgs),
     /// Pack a scripts directory back into a file.
-    Pack(ScriptArgs),
+    Pack(PackScriptArgs),
 }
 
 #[derive(clap::Args)]
@@ -52,18 +55,26 @@ struct ConvArgs {
 }
 
 #[derive(clap::Args)]
-struct ScriptArgs {
-    /// The directory containing script files.
-    directory: PathBuf,
+struct UnpackScriptArgs {
     /// The packed script file.
     file: PathBuf,
+    /// The directory containing script files.
+    directory: PathBuf,
+}
+
+#[derive(clap::Args)]
+struct PackScriptArgs {
+    /// The packed script file.
+    file: PathBuf,
+    /// The directory containing script files.
+    directory: PathBuf,
 }
 
 #[allow(unused)]
 fn main() {
     match Cli::parse().command {
         Commands::Convert(conv_args) => conv::convert(conv_args),
-        Commands::Unpack(script_args) => todo!(),
-        Commands::Pack(script_args) => todo!(),
+        Commands::Pack(script_args) => pack::pack(script_args),
+        Commands::Unpack(script_args) => unpack::unpack(script_args),
     }
 }
