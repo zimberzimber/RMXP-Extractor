@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["common", "marshal2conv", "rpgtool"]
+members = ["common", "marshalconv", "rpgtool"]
 
 [workspace.dependencies]
 alox-48 = "0.6"
