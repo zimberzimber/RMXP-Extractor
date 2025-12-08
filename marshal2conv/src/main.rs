@@ -44,14 +44,14 @@ fn main() {
     let input = match std::fs::File::open(&src) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("failed to read {}: {e}", src.display());
+            eprintln!("failed to open {}: {e}", src.display());
             return;
         }
     };
-    let output = match std::fs::File::open(&dest) {
+    let output = match std::fs::File::create(&dest) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("failed to read {}: {e}", dest.display());
+            eprintln!("failed to open {}: {e}", dest.display());
             return;
         }
     };
