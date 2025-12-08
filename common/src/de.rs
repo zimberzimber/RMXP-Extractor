@@ -76,19 +76,19 @@ impl<'de> serde::de::Visitor<'de> for Visitor {
     where
         A: serde::de::MapAccess<'de>,
     {
-        let Some(key): Option<&str> = map.next_key()? else {
+        let Some(key): Option<String> = map.next_key()? else {
             return Err(A::Error::custom("expected a key"));
         };
-        let value = match key {
-            "$symbol" => Value::Symbol(map.next_value::<&str>()?.into()),
+        let value = match key.as_str() {
+            "$symbol" => Value::Symbol(map.next_value::<String>()?.into()),
             "$hash" => Value::Hash(map.next_value::<DeserializeHash>()?.0),
             "$userdata" => Value::Userdata(map.next_value::<DeserializeUserdata>()?.into()),
             "$object" => Value::Object(map.next_value::<DeserializeObject>()?.into()),
             "$instance" => Value::Instance(map.next_value::<DeserializeInstance>()?.into()),
             "$regex" => map.next_value::<DeserializeRegex>()?.into(),
             "$struct" => Value::RbStruct(map.next_value::<DeserializeStruct>()?.into()),
-            "$class" => Value::Class(map.next_value::<&str>()?.into()),
-            "$module" => Value::Module(map.next_value::<&str>()?.into()),
+            "$class" => Value::Class(map.next_value::<String>()?.into()),
+            "$module" => Value::Module(map.next_value::<String>()?.into()),
             "$extended" => map.next_value::<DeserializeExtended>()?.into(),
             "$userclass" => map.next_value::<DeserializeUsertype>()?.into_uclass(),
             "$usermarshal" => map.next_value::<DeserializeUsertype>()?.into_umarshal(),
@@ -156,7 +156,7 @@ impl<'de> serde::de::Visitor<'de> for FieldsVisitor {
         A: serde::de::MapAccess<'de>,
     {
         let mut fields = alox_48::RbFields::new();
-        while let Some((k, v)) = map.next_entry::<&str, DeserializeValue>()? {
+        while let Some((k, v)) = map.next_entry::<String, DeserializeValue>()? {
             fields.insert(alox_48::Symbol::from(k), v.0);
         }
         Ok(fields)
