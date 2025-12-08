@@ -13,3 +13,5 @@ ron.workspace = true
 serde_yaml_ng.workspace = true
 
 common.workspace = true
+
+indicatif = "0.18.3"

@@ -1,13 +1,17 @@
 use clap::{CommandFactory, error::ErrorKind};
 use common::Format;
+use indicatif::ProgressStyle;
 
 use super::{Cli, ConvArgs};
 
 macro_rules! yeet {
-    ($fail_on_error:expr) => {
+    ($msg:expr, $pb:expr, $fail_on_error:expr) => {
         if $fail_on_error {
+            $pb.println($msg);
+            $pb.abandon();
             return;
         } else {
+            $pb.println($msg);
             continue;
         }
     };
@@ -64,21 +68,36 @@ pub fn convert(args: ConvArgs) {
         }
     };
 
-    for entry in read_dir {
-        let entry = match entry {
+    let entries: Vec<_> = if fail_on_error {
+        match read_dir.collect() {
             Ok(e) => e,
             Err(e) => {
                 eprintln!("failed to read directory entry: {e}");
-                yeet!(fail_on_error)
+                return;
             }
-        };
+        }
+    } else {
+        read_dir.filter_map(Result::ok).collect()
+    };
 
+    let pb = indicatif::ProgressBar::new(entries.len() as _);
+    pb.set_style(
+        ProgressStyle::with_template(
+            "{spinner:.green} [{elapsed_precise}] [{bar:.cyan/blue}] {pos}/{len} converted",
+        )
+        .expect("should be valid")
+        .progress_chars("#>-"),
+    );
+    pb.enable_steady_tick(std::time::Duration::from_millis(50));
+
+    for entry in entries.iter() {
+        pb.inc(1);
         let src_path = entry.path();
         // if not a file *or* the file extension does not match what it should, print warning and continue
         if !entry.file_type().expect("couldn't get file type").is_file()
             || src_path.extension().is_none_or(|ext| ext != input_file_ext)
         {
-            eprintln!("[WARN]: Ignoring {}", src_path.display());
+            pb.println(format!("[WARN]: Ignoring {}", src_path.display()));
             continue;
         }
 
@@ -88,24 +107,36 @@ pub fn convert(args: ConvArgs) {
         let input = match std::fs::File::open(&src_path) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("couldn't open {}", src_path.display());
-                yeet!(fail_on_error)
+                eprintln!();
+                yeet!(
+                    format!("couldn't open {}", src_path.display()),
+                    pb,
+                    fail_on_error
+                )
             }
         };
         let input = std::io::BufReader::new(input);
 
-        let output = match std::fs::File::open(&dest_path) {
+        let output = match std::fs::File::create(&dest_path) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("couldn't open {}", dest_path.display());
-                yeet!(fail_on_error)
+                yeet!(
+                    format!("couldn't open {}", dest_path.display()),
+                    pb,
+                    fail_on_error
+                )
             }
         };
         let output = std::io::BufWriter::new(output);
 
         if let Err(e) = common::conv_io(from, to, input, output) {
-            eprintln!("failed to convert {}: {e}", src_path.display());
-            yeet!(fail_on_error)
+            yeet!(
+                format!("failed to convert {}: {e}", src_path.display()),
+                pb,
+                fail_on_error
+            )
         }
     }
+
+    pb.finish();
 }
