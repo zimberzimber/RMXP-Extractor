@@ -1,4 +1,4 @@
-#![warn(clippy::unwrap_used)]
+#![warn(clippy::unwrap_used, clippy::pedantic, rust_2018_idioms)]
 
 extern crate rpgtool_common as common;
 

@@ -58,10 +58,11 @@ impl alox_48::Serialize for Script {
 
         let mut array = serializer.serialize_array(3)?;
 
-        let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), Default::default());
+        let mut encoder =
+            flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
         let data = encoder
             .write_all(self.text.as_bytes())
-            .and_then(|_| encoder.finish())
+            .and_then(|()| encoder.finish())
             .map_err(alox_48::SerError::custom)?;
 
         array.serialize_element(&0i32)?;

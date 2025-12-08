@@ -44,7 +44,7 @@ pub fn unpack(args: UnpackScriptArgs) {
 
         let trimmed_name = script.name.trim();
         // continue if comment or script name is only whitespace/empty
-        if trimmed_name.is_empty() || trimmed_name.starts_with("#") {
+        if trimmed_name.is_empty() || trimmed_name.starts_with('#') {
             continue;
         }
 
@@ -66,7 +66,7 @@ pub fn unpack(args: UnpackScriptArgs) {
             eprintln!(
                 "failed to write script {trimmed_name} to {}: {e}",
                 new_path.display()
-            )
+            );
         }
     }
 }

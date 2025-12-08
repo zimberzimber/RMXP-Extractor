@@ -1,7 +1,15 @@
 [package]
 name = "rpgtool"
 version = "0.1.0"
-edition = "2024"
+description = "Utility tool for working with RPG Maker projects"
+
+readme.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+edition.workspace = true
 
 [dependencies]
 clap.workspace = true

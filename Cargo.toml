@@ -2,6 +2,15 @@
 resolver = "3"
 members = ["common", "marshalconv", "rpgtool"]
 
+[workspace.package]
+readme = "README.md"
+authors = ["melody-rs <melody@melody-is.gay>"]
+license = "MPL-2.0"
+repository = "https://github.com/melody-rs/rpgtool"
+keywords = ["cli", "ruby", "rpg", "marshal"]
+categories = ["command-line-utilities"]
+edition = "2024"
+
 [workspace.dependencies]
 alox-48 = "0.6"
 clap = { version = "4.5.53", features = ["derive"] }

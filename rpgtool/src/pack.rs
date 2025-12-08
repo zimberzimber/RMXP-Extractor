@@ -16,7 +16,7 @@ pub fn pack(args: PackScriptArgs) {
 
     for name in scripts_txt.lines() {
         let trimmed_name = name.trim();
-        if trimmed_name.is_empty() || trimmed_name.starts_with("#") {
+        if trimmed_name.is_empty() || trimmed_name.starts_with('#') {
             scripts.push(Script {
                 name: name.to_owned(),
                 text: String::new(),
@@ -48,6 +48,6 @@ pub fn pack(args: PackScriptArgs) {
     };
 
     if let Err(e) = std::fs::write(&file, script_data) {
-        eprintln!("failed to write script data to {}: {e}", file.display())
+        eprintln!("failed to write script data to {}: {e}", file.display());
     }
 }

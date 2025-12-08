@@ -5,19 +5,17 @@ use indicatif::ProgressStyle;
 use super::{Cli, ConvArgs};
 
 macro_rules! yeet {
-    ($msg:expr, $pb:expr, $fail_on_error:expr) => {
+    ($msg:expr, $pb:expr, $fail_on_error:expr) => {{
+        $pb.println($msg);
         if $fail_on_error {
-            $pb.println($msg);
             $pb.abandon();
             return;
-        } else {
-            $pb.println($msg);
-            continue;
         }
-    };
+        continue;
+    }};
 }
 
-#[allow(unused)]
+#[allow(clippy::too_many_lines, clippy::needless_continue)]
 pub fn convert(args: ConvArgs) {
     let ConvArgs {
         src,
@@ -60,7 +58,7 @@ pub fn convert(args: ConvArgs) {
         return;
     }
 
-    let mut read_dir = match std::fs::read_dir(&src) {
+    let read_dir = match std::fs::read_dir(&src) {
         Ok(r) => r,
         Err(e) => {
             eprintln!("failed to read {}: {e}", src.display());
@@ -90,7 +88,7 @@ pub fn convert(args: ConvArgs) {
     );
     pb.enable_steady_tick(std::time::Duration::from_millis(50));
 
-    for entry in entries.iter() {
+    for entry in &entries {
         pb.inc(1);
         let src_path = entry.path();
         // if not a file *or* the file extension does not match what it should, print warning and continue
@@ -109,7 +107,7 @@ pub fn convert(args: ConvArgs) {
             Err(e) => {
                 eprintln!();
                 yeet!(
-                    format!("couldn't open {}", src_path.display()),
+                    format!("couldn't open {}: {e}", src_path.display()),
                     pb,
                     fail_on_error
                 )
@@ -121,7 +119,7 @@ pub fn convert(args: ConvArgs) {
             Ok(f) => f,
             Err(e) => {
                 yeet!(
-                    format!("couldn't open {}", dest_path.display()),
+                    format!("couldn't open {}: {e}", dest_path.display()),
                     pb,
                     fail_on_error
                 )
@@ -134,7 +132,7 @@ pub fn convert(args: ConvArgs) {
                 format!("failed to convert {}: {e}", src_path.display()),
                 pb,
                 fail_on_error
-            )
+            );
         }
     }
 
