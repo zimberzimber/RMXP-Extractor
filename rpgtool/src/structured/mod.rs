@@ -114,7 +114,7 @@ pub fn convert(args: StructuredArgs) {
         let dest_path = dest.join(filename).with_extension(output_file_ext);
 
         let result = match game_version {
-            GameVer::XP => convert_xp(&src_path, &dest_path, to, from),
+            GameVer::RPGXP => convert_xp(&src_path, &dest_path, to, from),
         };
 
         if let Err(e) = result {

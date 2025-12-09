@@ -93,9 +93,10 @@ struct StructuredArgs {
     output_file_ext: Option<PathBuf>,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(clap::ValueEnum, Clone)]
 enum GameVer {
-    XP,
+    RPGXP,
 }
 
 #[derive(clap::Args)]
