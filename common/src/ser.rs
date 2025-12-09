@@ -67,14 +67,14 @@ impl<'a> serde::Serialize for SerializeString<'a> {
 #[serde(rename = "Userdata")]
 struct SerializeUserdata<'a> {
     class: &'a str,
-    data: &'a [u8],
+    data: SerializeBytes<'a>,
 }
 
 impl<'a> From<&'a alox_48::Userdata> for SerializeUserdata<'a> {
     fn from(value: &'a alox_48::Userdata) -> Self {
         Self {
             class: value.class.as_str(),
-            data: &value.data,
+            data: SerializeBytes(&value.data),
         }
     }
 }

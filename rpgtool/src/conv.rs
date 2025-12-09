@@ -66,7 +66,7 @@ pub fn convert(args: ConvArgs) {
         }
     };
 
-    let entries: Vec<_> = if fail_on_error {
+    let mut entries: Vec<_> = if fail_on_error {
         match read_dir.collect() {
             Ok(e) => e,
             Err(e) => {
@@ -77,6 +77,7 @@ pub fn convert(args: ConvArgs) {
     } else {
         read_dir.filter_map(Result::ok).collect()
     };
+    entries.sort_by_key(std::fs::DirEntry::path);
 
     let pb = indicatif::ProgressBar::new(entries.len() as _);
     pb.set_style(

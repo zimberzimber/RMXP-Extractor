@@ -273,14 +273,14 @@ impl<'de> serde::Deserialize<'de> for DeserializeFields {
 #[serde(rename = "Userdata")]
 struct DeserializeUserdata {
     class: String,
-    data: Vec<u8>,
+    data: DeserializeBytes,
 }
 
 impl From<DeserializeUserdata> for alox_48::Userdata {
     fn from(val: DeserializeUserdata) -> Self {
         alox_48::Userdata {
             class: val.class.into(),
-            data: val.data,
+            data: val.data.0,
         }
     }
 }
