@@ -50,7 +50,7 @@ fn main() {
             return;
         }
     };
-    let value = match common::conv_read(from, input) {
+    let value: common::Value = match common::conv_read(from, input) {
         Ok(v) => v,
         Err(e) => {
             eprintln!("failed to parse {}: {e}", src.display());

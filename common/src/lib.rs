@@ -5,15 +5,48 @@
     clippy::cast_possible_truncation
 )]
 
-mod ser;
-use std::sync::atomic::{AtomicBool, Ordering};
-
-pub use ser::SerializeValue;
-
 mod de;
-pub use de::DeserializeValue;
+mod ser;
 
-use serde::Serialize;
+pub struct Value(pub alox_48::Value);
+
+impl<'de> serde::Deserialize<'de> for Value {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        de::DeserializeValue::deserialize(deserializer).map(|v| Self(v.0))
+    }
+}
+
+impl serde::Serialize for Value {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        ser::SerializeValue(&self.0).serialize(serializer)
+    }
+}
+
+impl<'de> alox_48::Deserialize<'de> for Value {
+    fn deserialize<D>(deserializer: D) -> alox_48::DeResult<Self>
+    where
+        D: alox_48::DeserializerTrait<'de>,
+    {
+        alox_48::Value::deserialize(deserializer).map(Self)
+    }
+}
+
+impl alox_48::Serialize for Value {
+    fn serialize<S>(&self, serializer: S) -> alox_48::SerResult<S::Ok>
+    where
+        S: alox_48::SerializerTrait,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, clap::ValueEnum)]
 pub enum Format {
@@ -85,9 +118,10 @@ fn binary_bytes_allowed() -> bool {
     BYTES_ALLOWED.load(Ordering::Relaxed)
 }
 
-pub fn conv_read<R>(from: Format, mut input: R) -> Result<alox_48::Value, ConvError>
+pub fn conv_read<R, T>(from: Format, mut input: R) -> Result<T, ConvError>
 where
     R: std::io::Read,
+    T: for<'de> serde::Deserialize<'de> + for<'de> alox_48::Deserialize<'de>,
 {
     set_binary_bytes_allowed(from != Format::Yaml);
 
@@ -95,32 +129,23 @@ where
         Format::Marshal => {
             let mut data = vec![];
             input.read_to_end(&mut data)?;
-            alox_48::from_bytes(&data)?
+            alox_48::from_bytes::<T>(&data)?
         }
-        Format::Json => {
-            let value: DeserializeValue = serde_json::from_reader(input)?;
-            value.0
-        }
-        Format::Ron => {
-            let value: DeserializeValue = ron::Options::default().from_reader(input)?;
-            value.0
-        }
+        Format::Json => serde_json::from_reader(input)?,
+        Format::Ron => ron::Options::default().from_reader(input)?,
         Format::Saphyr => {
             let mut iter = serde_saphyr::read(&mut input);
-            let value: DeserializeValue = iter.next().ok_or(ConvError::SaphyrNoDocument)??;
-            value.0
+            iter.next().ok_or(ConvError::SaphyrNoDocument)??
         }
-        Format::Yaml => {
-            let value: DeserializeValue = serde_yaml_ng::from_reader(input)?;
-            value.0
-        }
+        Format::Yaml => serde_yaml_ng::from_reader(input)?,
     };
     Ok(value)
 }
 
-pub fn conv_write<W>(value: alox_48::Value, to: Format, mut output: W) -> Result<(), ConvError>
+pub fn conv_write<W, T>(value: T, to: Format, mut output: W) -> Result<(), ConvError>
 where
     W: std::io::Write,
+    T: serde::Serialize + alox_48::Serialize,
 {
     set_binary_bytes_allowed(to != Format::Yaml);
 
@@ -131,18 +156,18 @@ where
         }
         Format::Json => {
             let mut ser = serde_json::Serializer::pretty(output);
-            SerializeValue(&value).serialize(&mut ser)?;
+            serde::Serialize::serialize(&value, &mut ser)?;
         }
         Format::Ron => {
             let config = ron::ser::PrettyConfig::default();
-            ron::Options::default().to_io_writer_pretty(output, &SerializeValue(&value), config)?;
+            ron::Options::default().to_io_writer_pretty(output, &value, config)?;
         }
         Format::Saphyr => {
-            serde_saphyr::to_io_writer(&mut output, &SerializeValue(&value))?;
+            serde_saphyr::to_io_writer(&mut output, &value)?;
         }
         Format::Yaml => {
             let mut ser = serde_yaml_ng::Serializer::new(output);
-            SerializeValue(&value).serialize(&mut ser)?;
+            serde::Serialize::serialize(&value, &mut ser)?;
         }
     }
 

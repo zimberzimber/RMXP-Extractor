@@ -116,7 +116,7 @@ pub fn convert(args: ConvArgs) {
         };
         let input = std::io::BufReader::new(input);
 
-        let value = match common::conv_read(from, input) {
+        let value: common::Value = match common::conv_read(from, input) {
             Ok(v) => v,
             Err(e) => {
                 yeet!(
