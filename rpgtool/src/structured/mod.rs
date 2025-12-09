@@ -24,7 +24,16 @@ use common::Format;
 use indicatif::ProgressStyle;
 use std::path::PathBuf;
 
-#[allow(unused_variables)]
+macro_rules! fail {
+    ($pb:expr, $fail_on_error:expr) => {
+        if $fail_on_error {
+            $pb.abandon();
+            return;
+        }
+    };
+}
+
+#[allow(clippy::too_many_lines)]
 pub fn convert(args: StructuredArgs) {
     let StructuredArgs {
         src,
@@ -117,11 +126,20 @@ pub fn convert(args: StructuredArgs) {
             GameVer::RPGXP => convert_xp(&src_path, &dest_path, to, from),
         };
 
-        if let Err(e) = result {
-            pb.println(e);
-            if fail_on_error {
-                pb.abandon();
-                return;
+        match result {
+            ConvertResult::Ok => {}
+            ConvertResult::Err(e) => {
+                pb.println(e);
+                fail!(pb, fail_on_error);
+            }
+            ConvertResult::Unrecognized => {
+                pb.println(format!("unrecognized file {}", src_path.display()));
+                fail!(pb, fail_on_error);
+
+                if let Err(e) = convert_data::<common::Value>(&src_path, &dest_path, to, from) {
+                    pb.println(e);
+                    fail!(pb, fail_on_error);
+                }
             }
         }
     }
@@ -129,18 +147,24 @@ pub fn convert(args: StructuredArgs) {
     pb.finish();
 }
 
+enum ConvertResult {
+    Ok,
+    Err(String),
+    Unrecognized,
+}
+
 fn convert_xp(
     src_path: &std::path::Path,
     dest_path: &std::path::Path,
     to: Format,
     from: Format,
-) -> Result<(), String> {
+) -> ConvertResult {
     let prefix = src_path.file_prefix().expect("there should be a prefix");
     let Some(filename) = prefix.to_str() else {
-        return Err(format!("{} is not valid UTF-8", prefix.display()));
+        return ConvertResult::Err(format!("{} is not valid UTF-8", prefix.display()));
     };
 
-    match filename {
+    let result = match filename {
         "Actors" => convert_data::<rmxp::Actors>(src_path, dest_path, to, from),
         "Animations" => convert_data::<rmxp::Animations>(src_path, dest_path, to, from),
         "Armors" => convert_data::<rmxp::Armors>(src_path, dest_path, to, from),
@@ -161,7 +185,12 @@ fn convert_xp(
         "Scripts" | "xScripts" => {
             convert_data::<Vec<shared::Script>>(src_path, dest_path, to, from)
         }
-        _ => Err(format!("unknown game data file {filename}")),
+        _ => return ConvertResult::Unrecognized,
+    };
+
+    match result {
+        Ok(()) => ConvertResult::Ok,
+        Result::Err(e) => ConvertResult::Err(e),
     }
 }
 
