@@ -57,7 +57,11 @@ pub enum ConvError {
     #[error("{0}")]
     Ron(#[from] ron::Error),
     #[error("{0}")]
-    Yaml(#[from] serde_yaml_ng::Error),
+    YamlDe(#[from] serde_saphyr::Error),
+    #[error("{0}")]
+    YamlSer(#[from] serde_saphyr::ser_error::Error),
+    #[error("No YAML document was present")]
+    YamlNoDocument,
     #[error("{0}")]
     Io(#[from] std::io::Error),
 }
@@ -82,7 +86,8 @@ where
             value.0
         }
         Format::Yaml => {
-            let value: DeserializeValue = serde_yaml_ng::from_reader(input)?;
+            let mut iter = serde_saphyr::read(&mut input);
+            let value: DeserializeValue = iter.next().ok_or(ConvError::YamlNoDocument)??;
             value.0
         }
     };
@@ -101,8 +106,7 @@ where
             ron::Options::default().to_io_writer_pretty(output, &SerializeValue(&value), config)?;
         }
         Format::Yaml => {
-            let mut ser = serde_yaml_ng::Serializer::new(output);
-            SerializeValue(&value).serialize(&mut ser)?;
+            serde_saphyr::to_io_writer(&mut output, &SerializeValue(&value))?;
         }
     }
 

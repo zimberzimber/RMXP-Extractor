@@ -93,7 +93,7 @@ impl<'de> serde::de::Visitor<'de> for Visitor {
             "$userclass" => map.next_value::<DeserializeUsertype>()?.into_uclass(),
             "$usermarshal" => map.next_value::<DeserializeUsertype>()?.into_umarshal(),
             "$cdata" => map.next_value::<DeserializeUsertype>()?.into_cdata(),
-            "$string" => Value::String(map.next_value::<Vec<u8>>()?.into()),
+            "$string" => Value::String(map.next_value::<DeserializeBytes>()?.0.into()),
             _ => return Err(A::Error::custom("invalid data type")),
         };
 
@@ -110,51 +110,51 @@ impl<'de> serde::Deserialize<'de> for DeserializeValue {
     }
 }
 
-// struct DeserializeBytes(Vec<u8>);
+struct DeserializeBytes(Vec<u8>);
 
-// struct BytesVisitor;
+struct BytesVisitor;
 
-// impl<'de> serde::de::Visitor<'de> for BytesVisitor {
-//     type Value = Vec<u8>;
+impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+    type Value = Vec<u8>;
 
-//     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-//         formatter.write_str("a byte buffer")
-//     }
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a byte buffer")
+    }
 
-//     fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
-//     where
-//         E: Error,
-//     {
-//         Ok(v.to_vec())
-//     }
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(v.to_vec())
+    }
 
-//     fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
-//     where
-//         E: Error,
-//     {
-//         Ok(v)
-//     }
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(v)
+    }
 
-//     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-//     where
-//         A: serde::de::SeqAccess<'de>,
-//     {
-//         let mut buf = vec![];
-//         while let Some(next) = seq.next_element()? {
-//             buf.push(next);
-//         }
-//         Ok(buf)
-//     }
-// }
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::SeqAccess<'de>,
+    {
+        let mut buf = vec![];
+        while let Some(next) = seq.next_element()? {
+            buf.push(next);
+        }
+        Ok(buf)
+    }
+}
 
-// impl<'de> serde::Deserialize<'de> for DeserializeBytes {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: serde::Deserializer<'de>,
-//     {
-//         deserializer.deserialize_byte_buf(BytesVisitor).map(Self)
-//     }
-// }
+impl<'de> serde::Deserialize<'de> for DeserializeBytes {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_byte_buf(BytesVisitor).map(Self)
+    }
+}
 
 struct DeserializeString(alox_48::RbString);
 
@@ -193,7 +193,7 @@ impl<'de> serde::de::Visitor<'de> for StringVisitor {
             return Err(A::Error::custom("expected key to be $string"));
         }
 
-        Ok(map.next_value::<Vec<u8>>()?.into())
+        Ok(map.next_value::<DeserializeBytes>()?.0.into())
     }
 }
 

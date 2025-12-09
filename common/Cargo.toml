@@ -19,6 +19,6 @@ clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 ron.workspace = true
-serde_yaml_ng.workspace = true
+serde-saphyr.workspace = true
 
 thiserror.workspace = true
