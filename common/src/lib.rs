@@ -1,4 +1,9 @@
-#![warn(clippy::unwrap_used)]
+#![warn(clippy::unwrap_used, clippy::pedantic, rust_2018_idioms)]
+#![allow(
+    clippy::must_use_candidate,
+    clippy::missing_errors_doc,
+    clippy::cast_possible_truncation
+)]
 
 mod ser;
 use std::sync::atomic::{AtomicBool, Ordering};

@@ -5,7 +5,7 @@ pub struct SerializeValue<'a>(pub &'a Value);
 
 struct SerializeHash<'a>(&'a alox_48::RbHash);
 
-impl<'a> serde::Serialize for SerializeHash<'a> {
+impl serde::Serialize for SerializeHash<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -20,7 +20,7 @@ impl<'a> serde::Serialize for SerializeHash<'a> {
 
 struct SerializeFields<'a>(&'a alox_48::RbFields);
 
-impl<'a> serde::Serialize for SerializeFields<'a> {
+impl serde::Serialize for SerializeFields<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -38,7 +38,7 @@ struct SerializeString<'a>(&'a alox_48::RbString);
 // FIXME figure out how to recover from serialization errors to try using serialize_seq instead
 struct SerializeBytes<'a>(&'a [u8]);
 
-impl<'a> serde::Serialize for SerializeBytes<'a> {
+impl serde::Serialize for SerializeBytes<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -51,18 +51,17 @@ impl<'a> serde::Serialize for SerializeBytes<'a> {
     }
 }
 
-impl<'a> serde::Serialize for SerializeString<'a> {
+impl serde::Serialize for SerializeString<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        match str::from_utf8(&self.0.data) {
-            Ok(string) => serializer.serialize_str(string),
-            Err(_) => {
-                let mut map = serializer.serialize_map(Some(1))?;
-                map.serialize_entry("$string", &SerializeBytes(&self.0.data))?;
-                map.end()
-            }
+        if let Ok(string) = str::from_utf8(&self.0.data) {
+            serializer.serialize_str(string)
+        } else {
+            let mut map = serializer.serialize_map(Some(1))?;
+            map.serialize_entry("$string", &SerializeBytes(&self.0.data))?;
+            map.end()
         }
     }
 }
@@ -178,19 +177,19 @@ impl serde::Serialize for SerializeValue<'_> {
             Value::Userdata(userdata) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_key("$userdata")?;
-                map.serialize_value::<SerializeUserdata>(&userdata.into())?;
+                map.serialize_value::<SerializeUserdata<'_>>(&userdata.into())?;
                 map.end()
             }
             Value::Object(object) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_key("$object")?;
-                map.serialize_value::<SerializeObject>(&object.into())?;
+                map.serialize_value::<SerializeObject<'_>>(&object.into())?;
                 map.end()
             }
             Value::Instance(instance) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_key("$instance")?;
-                map.serialize_value::<SerializeInstance>(&instance.into())?;
+                map.serialize_value::<SerializeInstance<'_>>(&instance.into())?;
                 map.end()
             }
             Value::Regex { data, flags } => {
@@ -205,7 +204,7 @@ impl serde::Serialize for SerializeValue<'_> {
             Value::RbStruct(rb_struct) => {
                 let mut map = serializer.serialize_map(Some(1))?;
                 map.serialize_key("$struct")?;
-                map.serialize_value::<SerializeStruct>(&rb_struct.into())?;
+                map.serialize_value::<SerializeStruct<'_>>(&rb_struct.into())?;
                 map.end()
             }
             Value::Class(symbol) => {

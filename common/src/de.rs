@@ -8,7 +8,7 @@ struct Visitor;
 impl<'de> serde::de::Visitor<'de> for Visitor {
     type Value = Value;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("any value")
     }
 
@@ -67,7 +67,7 @@ impl<'de> serde::de::Visitor<'de> for Visitor {
     {
         let mut array = alox_48::RbArray::new();
         while let Some(value) = seq.next_element::<DeserializeValue>()? {
-            array.push(value.0)
+            array.push(value.0);
         }
         Ok(Value::Array(array))
     }
@@ -117,7 +117,7 @@ struct BytesVisitor;
 impl<'de> serde::de::Visitor<'de> for BytesVisitor {
     type Value = Vec<u8>;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("a byte buffer")
     }
 
@@ -167,7 +167,7 @@ struct StringVisitor;
 impl<'de> serde::de::Visitor<'de> for StringVisitor {
     type Value = alox_48::RbString;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("a ruby string")
     }
 
@@ -216,7 +216,7 @@ struct HashVisitor;
 impl<'de> serde::de::Visitor<'de> for HashVisitor {
     type Value = alox_48::RbHash;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("a map")
     }
 
@@ -248,7 +248,7 @@ struct FieldsVisitor;
 impl<'de> serde::de::Visitor<'de> for FieldsVisitor {
     type Value = alox_48::RbFields;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("a map")
     }
 

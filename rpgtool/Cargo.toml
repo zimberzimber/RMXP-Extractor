@@ -14,8 +14,12 @@ edition.workspace = true
 [dependencies]
 clap.workspace = true
 alox-48.workspace = true
+serde.workspace = true
 
 rpgtool-common.workspace = true
 
 indicatif = "0.18.3"
 flate2 = "1.1.5"
+
+bytemuck = { version = "1.24.0", features = ["derive", "extern_crate_alloc"] }
+num_enum = "0.7.0"

@@ -9,6 +9,7 @@ use std::path::PathBuf;
 mod conv;
 mod pack;
 mod script;
+mod structured;
 mod unpack;
 
 /// Utility for working with RPG Maker XP - VX Ace projects.
