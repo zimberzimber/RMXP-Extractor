@@ -1,6 +1,8 @@
 #![warn(clippy::unwrap_used)]
 
 mod ser;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 pub use ser::SerializeValue;
 
 mod de;
@@ -8,12 +10,13 @@ pub use de::DeserializeValue;
 
 use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, clap::ValueEnum)]
 pub enum Format {
     Json,
     Marshal,
     Ron,
     Yaml,
+    Saphyr,
 }
 
 impl Format {
@@ -38,7 +41,7 @@ impl Format {
             Format::Json => "json",
             Format::Marshal => "rxdata",
             Format::Ron => "ron",
-            Format::Yaml => "yaml",
+            Format::Yaml | Format::Saphyr => "yaml",
         })
     }
 }
@@ -56,19 +59,33 @@ pub enum ConvError {
     #[error("{0}")]
     Ron(#[from] ron::Error),
     #[error("{0}")]
-    YamlDe(#[from] serde_saphyr::Error),
+    SaphyrDe(#[from] serde_saphyr::Error),
     #[error("{0}")]
-    YamlSer(#[from] serde_saphyr::ser_error::Error),
+    SaphyrSer(#[from] serde_saphyr::ser_error::Error),
     #[error("No YAML document was present")]
-    YamlNoDocument,
+    SaphyrNoDocument,
+    #[error("{0}")]
+    Yaml(#[from] serde_yaml_ng::Error),
     #[error("{0}")]
     Io(#[from] std::io::Error),
+}
+
+static BYTES_ALLOWED: AtomicBool = AtomicBool::new(true);
+
+fn set_binary_bytes_allowed(allowed: bool) {
+    BYTES_ALLOWED.store(allowed, Ordering::Relaxed);
+}
+
+fn binary_bytes_allowed() -> bool {
+    BYTES_ALLOWED.load(Ordering::Relaxed)
 }
 
 pub fn conv_read<R>(from: Format, mut input: R) -> Result<alox_48::Value, ConvError>
 where
     R: std::io::Read,
 {
+    set_binary_bytes_allowed(from != Format::Yaml);
+
     let value = match from {
         Format::Marshal => {
             let mut data = vec![];
@@ -83,9 +100,13 @@ where
             let value: DeserializeValue = ron::Options::default().from_reader(input)?;
             value.0
         }
-        Format::Yaml => {
+        Format::Saphyr => {
             let mut iter = serde_saphyr::read(&mut input);
-            let value: DeserializeValue = iter.next().ok_or(ConvError::YamlNoDocument)??;
+            let value: DeserializeValue = iter.next().ok_or(ConvError::SaphyrNoDocument)??;
+            value.0
+        }
+        Format::Yaml => {
+            let value: DeserializeValue = serde_yaml_ng::from_reader(input)?;
             value.0
         }
     };
@@ -96,6 +117,8 @@ pub fn conv_write<W>(value: alox_48::Value, to: Format, mut output: W) -> Result
 where
     W: std::io::Write,
 {
+    set_binary_bytes_allowed(to != Format::Yaml);
+
     match to {
         Format::Marshal => {
             let data = alox_48::to_bytes(value)?;
@@ -109,8 +132,12 @@ where
             let config = ron::ser::PrettyConfig::default();
             ron::Options::default().to_io_writer_pretty(output, &SerializeValue(&value), config)?;
         }
-        Format::Yaml => {
+        Format::Saphyr => {
             serde_saphyr::to_io_writer(&mut output, &SerializeValue(&value))?;
+        }
+        Format::Yaml => {
+            let mut ser = serde_yaml_ng::Serializer::new(output);
+            SerializeValue(&value).serialize(&mut ser)?;
         }
     }
 

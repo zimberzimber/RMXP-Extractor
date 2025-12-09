@@ -43,7 +43,11 @@ impl<'a> serde::Serialize for SerializeBytes<'a> {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_bytes(self.0)
+        if crate::binary_bytes_allowed() {
+            serializer.serialize_bytes(self.0)
+        } else {
+            serde::Serialize::serialize(self.0, serializer) // serializes as a seq instead
+        }
     }
 }
 

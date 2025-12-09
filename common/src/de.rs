@@ -152,7 +152,11 @@ impl<'de> serde::Deserialize<'de> for DeserializeBytes {
     where
         D: serde::Deserializer<'de>,
     {
-        deserializer.deserialize_byte_buf(BytesVisitor).map(Self)
+        if crate::binary_bytes_allowed() {
+            deserializer.deserialize_byte_buf(BytesVisitor).map(Self)
+        } else {
+            <Vec<u8>>::deserialize(deserializer).map(Self)
+        }
     }
 }
 
