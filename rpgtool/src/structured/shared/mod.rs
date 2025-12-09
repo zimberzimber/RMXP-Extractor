@@ -3,12 +3,16 @@ mod event;
 mod mapinfo;
 mod move_route;
 mod parameter_type;
+mod script;
 
 pub use audio_file::*;
 pub use event::*;
 pub use mapinfo::*;
 pub use move_route::*;
 pub use parameter_type::*;
+pub use script::Script;
+
+use crate::structured::NilPadded;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Default, Hash)]
 #[derive(num_enum::TryFromPrimitive, num_enum::IntoPrimitive)]
@@ -63,3 +67,6 @@ pub enum Occasion {
     OnlyMenu = 2,
     Never = 3,
 }
+
+pub type MapInfos = std::collections::BTreeMap<usize, MapInfo>;
+pub type CommonEvents = NilPadded<CommonEvent>;

@@ -1,4 +1,4 @@
-use crate::{UnpackScriptArgs, script::Script};
+use crate::{UnpackScriptArgs, structured::Script};
 use std::io::Write as _;
 
 pub fn unpack(args: UnpackScriptArgs) {

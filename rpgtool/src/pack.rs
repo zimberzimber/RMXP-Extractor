@@ -1,4 +1,4 @@
-use crate::{PackScriptArgs, script::Script};
+use crate::{PackScriptArgs, structured::Script};
 
 pub fn pack(args: PackScriptArgs) {
     let PackScriptArgs { directory, file } = args;
@@ -18,6 +18,7 @@ pub fn pack(args: PackScriptArgs) {
         let trimmed_name = name.trim();
         if trimmed_name.is_empty() || trimmed_name.starts_with('#') {
             scripts.push(Script {
+                id: 0,
                 name: name.to_owned(),
                 text: String::new(),
             });
@@ -34,6 +35,7 @@ pub fn pack(args: PackScriptArgs) {
         };
 
         scripts.push(Script {
+            id: 0,
             name: name.to_owned(),
             text: script_text,
         });

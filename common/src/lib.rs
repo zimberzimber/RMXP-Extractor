@@ -84,6 +84,7 @@ impl Format {
     }
 }
 
+// TODO provide trace
 #[derive(Debug, thiserror::Error)]
 pub enum ConvError {
     #[error("{0}")]

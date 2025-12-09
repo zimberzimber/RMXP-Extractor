@@ -4,18 +4,6 @@ use indicatif::ProgressStyle;
 
 use super::{Cli, ConvArgs};
 
-macro_rules! yeet {
-    ($msg:expr, $pb:expr, $fail_on_error:expr) => {{
-        $pb.println($msg);
-        if $fail_on_error {
-            $pb.abandon();
-            return;
-        }
-        continue;
-    }};
-}
-
-#[allow(clippy::too_many_lines, clippy::needless_continue)]
 pub fn convert(args: ConvArgs) {
     let ConvArgs {
         src,
@@ -103,50 +91,43 @@ pub fn convert(args: ConvArgs) {
         let filename = src_path.file_name().expect("entry should have a file name");
         let dest_path = dest.join(filename).with_extension(output_file_ext);
 
-        let input = match std::fs::File::open(&src_path) {
-            Ok(f) => f,
-            Err(e) => {
-                eprintln!();
-                yeet!(
-                    format!("couldn't open {}: {e}", src_path.display()),
-                    pb,
-                    fail_on_error
-                )
+        if let Err(e) = convert_data::<common::Value>(&src_path, &dest_path, to, from) {
+            pb.println(e);
+            if fail_on_error {
+                pb.abandon();
+                return;
             }
-        };
-        let input = std::io::BufReader::new(input);
-
-        let value: common::Value = match common::conv_read(from, input) {
-            Ok(v) => v,
-            Err(e) => {
-                yeet!(
-                    format!("failed to parse {}: {e}", src_path.display()),
-                    pb,
-                    fail_on_error
-                )
-            }
-        };
-
-        let output = match std::fs::File::create(&dest_path) {
-            Ok(f) => f,
-            Err(e) => {
-                yeet!(
-                    format!("couldn't open {}: {e}", dest_path.display()),
-                    pb,
-                    fail_on_error
-                )
-            }
-        };
-        let output = std::io::BufWriter::new(output);
-
-        if let Err(e) = common::conv_write(value, to, output) {
-            yeet!(
-                format!("failed to convert {}: {e}", src_path.display()),
-                pb,
-                fail_on_error
-            );
         }
     }
 
     pb.finish();
+}
+
+fn convert_data<T>(
+    src_path: &std::path::Path,
+    dest_path: &std::path::Path,
+    to: Format,
+    from: Format,
+) -> Result<(), String>
+where
+    T: for<'de> serde::Deserialize<'de>
+        + serde::Serialize
+        + for<'de> alox_48::Deserialize<'de>
+        + alox_48::Serialize,
+{
+    let input = std::fs::File::open(src_path)
+        .map_err(|e| format!("couldn't open {}: {e}", src_path.display()))?;
+    let input = std::io::BufReader::new(input);
+
+    let value: T = common::conv_read(from, input)
+        .map_err(|e| format!("failed to parse {}: {e}", src_path.display()))?;
+
+    let output = std::fs::File::create(dest_path)
+        .map_err(|e| format!("couldn't open {}: {e}", dest_path.display()))?;
+    let output = std::io::BufWriter::new(output);
+
+    common::conv_write(value, to, output)
+        .map_err(|e| format!("failed to convert {}: {e}", src_path.display()))?;
+
+    Ok(())
 }

@@ -8,7 +8,6 @@ use std::path::PathBuf;
 
 mod conv;
 mod pack;
-mod script;
 mod structured;
 mod unpack;
 
@@ -21,19 +20,19 @@ struct Cli {
 
 #[derive(clap::Subcommand)]
 enum Commands {
-    /// Convert an entire project to another data format.
+    /// Dynamically convert an entire project to another data format.
     Convert(ConvArgs),
     /// Unpack a scripts file into a directory.
     Unpack(UnpackScriptArgs),
     /// Pack a scripts directory back into a file.
     Pack(PackScriptArgs),
-    /// Convert an entire project to another data format.
+    /// Rigidly convert an entire project to another data format.
     ///
     /// This uses a more rigid structured representation of game data instead
     /// of a loose format.
     ///
     /// Unknown game files are converted using the normal structured format.
-    ConvertStruct(StructuredArgs),
+    Structured(StructuredArgs),
 }
 
 #[derive(clap::Args)]
@@ -121,6 +120,6 @@ fn main() {
         Commands::Convert(conv_args) => conv::convert(conv_args),
         Commands::Pack(script_args) => pack::pack(script_args),
         Commands::Unpack(script_args) => unpack::unpack(script_args),
-        Commands::ConvertStruct(structured_args) => todo!(),
+        Commands::Structured(structured_args) => structured::convert(structured_args),
     }
 }

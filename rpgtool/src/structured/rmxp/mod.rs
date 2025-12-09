@@ -1,5 +1,3 @@
-
-
 pub mod actor;
 pub mod animation;
 pub mod armor;
@@ -27,3 +25,17 @@ pub use system::System;
 pub use tileset::Tileset;
 pub use troop::Troop;
 pub use weapon::Weapon;
+
+use crate::structured::NilPadded;
+
+pub type Actors = NilPadded<Actor>;
+pub type Animations = NilPadded<Animation>;
+pub type Armors = NilPadded<Armor>;
+pub type Classes = NilPadded<Class>;
+pub type Enemies = NilPadded<Enemy>;
+pub type Items = NilPadded<Item>;
+pub type Skills = NilPadded<Skill>;
+pub type States = NilPadded<State>;
+pub type Tilesets = NilPadded<Tileset>;
+pub type Troops = NilPadded<Troop>;
+pub type Weapons = NilPadded<Weapon>;

@@ -1,15 +1,15 @@
 pub use crate::structured::AudioFile;
+use crate::structured::NilPadded;
 
-#[derive(Debug)]
 #[derive(serde::Deserialize, serde::Serialize)]
 #[derive(alox_48::Deserialize, alox_48::Serialize)]
 #[marshal(class = "RPG::System")]
 pub struct System {
     pub magic_number: i32,
     pub party_members: Vec<usize>,
-    pub elements: Vec<String>,
-    pub switches: Vec<String>,
-    pub variables: Vec<String>,
+    pub elements: Vec<String>, // not nil padded (for some reason)
+    pub switches: NilPadded<String>,
+    pub variables: NilPadded<String>,
     pub windowskin_name: String,
     pub title_name: String,
     pub gameover_name: String,

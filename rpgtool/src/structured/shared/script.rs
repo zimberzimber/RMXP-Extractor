@@ -1,4 +1,6 @@
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Script {
+    pub id: u32, // no idea how the editor generates these and they don't seem to be used
     pub name: String,
     pub text: String,
 }
@@ -30,7 +32,7 @@ impl<'de> alox_48::Deserialize<'de> for Script {
                 }
 
                 // we validated the array length earlier
-                let _ = array.next_element::<alox_48::de::Ignored>()?.unwrap();
+                let id = array.next_element()?.unwrap();
                 let name = array.next_element()?.unwrap();
                 let data = array.next_element::<alox_48::RbString>()?.unwrap();
 
@@ -40,7 +42,7 @@ impl<'de> alox_48::Deserialize<'de> for Script {
                     .read_to_string(&mut text)
                     .map_err(alox_48::DeError::custom)?;
 
-                Ok(Script { name, text })
+                Ok(Script { id, name, text })
             }
         }
 
@@ -65,7 +67,7 @@ impl alox_48::Serialize for Script {
             .and_then(|()| encoder.finish())
             .map_err(alox_48::SerError::custom)?;
 
-        array.serialize_element(&0i32)?;
+        array.serialize_element(&self.id)?;
         array.serialize_element(&self.name)?;
         array.serialize_element(&alox_48::RbString { data })?;
 
