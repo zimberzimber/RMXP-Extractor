@@ -61,6 +61,11 @@ struct ConvArgs {
     ///
     // Optional, does not have to be specified.
     output_file_ext: Option<PathBuf>,
+    /// Run with a signle thread instead of multiple threads.
+    #[arg(long = "single-thread")]
+    single_thread: bool,
+    #[arg(long = "thread-count", conflicts_with = "single_thread")]
+    thread_count: Option<usize>,
 }
 
 #[derive(clap::Args)]
@@ -91,6 +96,11 @@ struct StructuredArgs {
     ///
     // Optional, does not have to be specified.
     output_file_ext: Option<PathBuf>,
+    /// Run with a signle thread instead of multiple threads.
+    #[arg(long = "single-thread")]
+    single_thread: bool,
+    #[arg(long = "thread-count", conflicts_with = "single_thread")]
+    thread_count: Option<usize>,
 }
 
 #[allow(clippy::upper_case_acronyms)]

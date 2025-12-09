@@ -22,13 +22,14 @@ use crate::{Cli, ConvArgs, GameVer, StructuredArgs};
 use clap::{CommandFactory, error::ErrorKind};
 use common::Format;
 use indicatif::ProgressStyle;
+use rayon::prelude::*;
 use std::path::PathBuf;
 
 macro_rules! fail {
     ($pb:expr, $fail_on_error:expr) => {
         if $fail_on_error {
             $pb.abandon();
-            return;
+            return None;
         }
     };
 }
@@ -43,7 +44,16 @@ pub fn convert(args: StructuredArgs) {
         fail_on_error,
         input_file_ext,
         output_file_ext,
+        single_thread,
+        thread_count,
     } = args;
+
+    if let Some(count) = thread_count {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(count)
+            .build_global()
+            .expect("failed to build thread pool");
+    }
 
     let [from, to] = match format.as_deref() {
         Some(&[from, to]) => [from, to],
@@ -108,7 +118,7 @@ pub fn convert(args: StructuredArgs) {
     );
     pb.enable_steady_tick(std::time::Duration::from_millis(50));
 
-    for entry in &entries {
+    let entry_fn = |entry: &std::fs::DirEntry| {
         pb.inc(1);
         let src_path = entry.path();
         // if not a file *or* the file extension does not match what it should, print warning and continue
@@ -116,7 +126,7 @@ pub fn convert(args: StructuredArgs) {
             || src_path.extension().is_none_or(|ext| ext != input_file_ext)
         {
             pb.println(format!("[WARN]: Ignoring {}", src_path.display()));
-            continue;
+            return Some(());
         }
 
         let filename = src_path.file_name().expect("entry should have a file name");
@@ -142,9 +152,19 @@ pub fn convert(args: StructuredArgs) {
                 }
             }
         }
-    }
 
-    pb.finish();
+        Some(())
+    };
+
+    let result = if single_thread {
+        entries.iter().try_for_each(entry_fn)
+    } else {
+        entries.par_iter().try_for_each(entry_fn)
+    };
+
+    if result.is_some() {
+        pb.finish();
+    }
 }
 
 enum ConvertResult {

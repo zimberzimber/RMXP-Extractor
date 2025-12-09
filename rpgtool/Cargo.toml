@@ -23,3 +23,5 @@ flate2 = "1.1.5"
 
 bytemuck = { version = "1.24.0", features = ["derive", "extern_crate_alloc"] }
 num_enum = "0.7.0"
+
+rayon = "1.11.0"
