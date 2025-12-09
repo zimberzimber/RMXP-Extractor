@@ -10,11 +10,6 @@ whereas `rpgtool` is a suite of tools for working with RPG Maker projects.
 
 Currently supports converting to `JSON`, `Yaml`, and `Ron`!
 
-# UTF-8
-
-Currently, this project is designed to work with UTF-8. 
-It won't choke on non-UTF-8 strings, but it'll try and interpret them as UTF-8 anyway!
-
 # Is it flawless?
 
 **No.** But it is very close.
@@ -47,9 +42,20 @@ For example, if you want to represent an object, you need to do it like this:
 You need to specify the class of the object as well as its fields. Instance variables should be prefixed with an `@` (like in Ruby)!
 Structs are represented the same way, but use `$struct` instead of `$object`.
 
-Non `@`-prefixed fields are allowed and valid butg are usually hidden from Ruby.
+Non `@`-prefixed fields are allowed and valid but are usually hidden from Ruby.
 Encoding is handled like this- any encodings are stored with `E`. (See Instance for a JSON representation of this.)
 Ascii strings have no `E` field, UTF-8 strings have `E` set to `true`, and everything else has `E` set to a string.
+
+### Strings
+
+Strings are a special case. If they're UTF-8 (or can be interpreted as UTF-8 safely) they'll be serialized as a string.
+Any non-UTF-8 strings will be serialized like this:
+
+```json
+{ "$string": [104, 101, 108, 108, 111] }
+```
+
+Unfortunately due to limitations with `serde_yaml_ng` non-UTF-8 strings are serializes as byte arrays instead of byte strings.
 
 ### Symbols
 ```json

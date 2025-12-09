@@ -93,6 +93,7 @@ impl<'de> serde::de::Visitor<'de> for Visitor {
             "$userclass" => map.next_value::<DeserializeUsertype>()?.into_uclass(),
             "$usermarshal" => map.next_value::<DeserializeUsertype>()?.into_umarshal(),
             "$cdata" => map.next_value::<DeserializeUsertype>()?.into_cdata(),
+            "$string" => Value::String(map.next_value::<Vec<u8>>()?.into()),
             _ => return Err(A::Error::custom("invalid data type")),
         };
 
@@ -106,6 +107,102 @@ impl<'de> serde::Deserialize<'de> for DeserializeValue {
         D: serde::Deserializer<'de>,
     {
         deserializer.deserialize_any(Visitor).map(Self)
+    }
+}
+
+// struct DeserializeBytes(Vec<u8>);
+
+// struct BytesVisitor;
+
+// impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+//     type Value = Vec<u8>;
+
+//     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+//         formatter.write_str("a byte buffer")
+//     }
+
+//     fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+//     where
+//         E: Error,
+//     {
+//         Ok(v.to_vec())
+//     }
+
+//     fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+//     where
+//         E: Error,
+//     {
+//         Ok(v)
+//     }
+
+//     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+//     where
+//         A: serde::de::SeqAccess<'de>,
+//     {
+//         let mut buf = vec![];
+//         while let Some(next) = seq.next_element()? {
+//             buf.push(next);
+//         }
+//         Ok(buf)
+//     }
+// }
+
+// impl<'de> serde::Deserialize<'de> for DeserializeBytes {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: serde::Deserializer<'de>,
+//     {
+//         deserializer.deserialize_byte_buf(BytesVisitor).map(Self)
+//     }
+// }
+
+struct DeserializeString(alox_48::RbString);
+
+struct StringVisitor;
+
+impl<'de> serde::de::Visitor<'de> for StringVisitor {
+    type Value = alox_48::RbString;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a ruby string")
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(v.into())
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(v.into())
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::MapAccess<'de>,
+    {
+        let Some(key): Option<String> = map.next_key()? else {
+            return Err(A::Error::custom("expected a key"));
+        };
+
+        if key != "$string" {
+            return Err(A::Error::custom("expected key to be $string"));
+        }
+
+        Ok(map.next_value::<Vec<u8>>()?.into())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for DeserializeString {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(StringVisitor).map(Self)
     }
 }
 
@@ -223,14 +320,14 @@ impl From<DeserializeInstance> for alox_48::Instance<Box<Value>> {
 #[derive(serde::Deserialize)]
 #[serde(rename = "Regex")]
 struct DeserializeRegex {
-    data: String,
+    data: DeserializeString,
     flags: u8,
 }
 
 impl From<DeserializeRegex> for alox_48::Value {
     fn from(val: DeserializeRegex) -> Self {
         alox_48::Value::Regex {
-            data: val.data.into(),
+            data: val.data.0,
             flags: val.flags,
         }
     }

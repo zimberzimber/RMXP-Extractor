@@ -35,13 +35,32 @@ impl<'a> serde::Serialize for SerializeFields<'a> {
 
 struct SerializeString<'a>(&'a alox_48::RbString);
 
+// while i would prefer to use this YAML errors out instead of forwarding to serialize_seq like it should,
+// and we have no way of recovering from serialization errors to try using serialize_seq instead
+// struct SerializeBytes<'a>(&'a [u8]);
+
+// impl<'a> serde::Serialize for SerializeBytes<'a> {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: serde::Serializer,
+//     {
+//         serializer.serialize_bytes(self.0)
+//     }
+// }
+
 impl<'a> serde::Serialize for SerializeString<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        let string = self.0.to_string_lossy(); // FIXME BAD DOES NOT ACCOUNT FOR NON-UTF8
-        serializer.serialize_str(&string)
+        match str::from_utf8(&self.0.data) {
+            Ok(string) => serializer.serialize_str(string),
+            Err(_) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("$string", &self.0.data)?;
+                map.end()
+            }
+        }
     }
 }
 

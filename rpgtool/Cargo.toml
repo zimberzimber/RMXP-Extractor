@@ -1,6 +1,6 @@
 [package]
 name = "rpgtool"
-version = "0.1.0"
+version = "0.1.1"
 description = "Utility tool for working with RPG Maker projects"
 
 readme.workspace = true
