@@ -49,6 +49,7 @@ impl alox_48::Serialize for Value {
 use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, clap::ValueEnum)]
+#[non_exhaustive]
 pub enum Format {
     Json,
     Marshal,
@@ -86,6 +87,7 @@ impl Format {
 
 // TODO provide trace
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum ConvError {
     #[error("{0}")]
     MarshalDe(#[from] alox_48::DeError),

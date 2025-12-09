@@ -467,7 +467,7 @@ checksum = "37c93d8daa9d8a012fd8ab92f088405fb202ea0b6ab73ee2482ae66af4f42091"
 
 [[package]]
 name = "marshalconv"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "clap",
  "rpgtool-common",
@@ -643,7 +643,7 @@ dependencies = [
 
 [[package]]
 name = "rpgtool"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "alox-48",
  "bytemuck",
@@ -658,7 +658,7 @@ dependencies = [
 
 [[package]]
 name = "rpgtool-common"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "alox-48",
  "clap",
