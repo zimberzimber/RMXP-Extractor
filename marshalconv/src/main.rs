@@ -50,6 +50,14 @@ fn main() {
             return;
         }
     };
+    let value = match common::conv_read(from, input) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("failed to parse {}: {e}", src.display());
+            return;
+        }
+    };
+
     let output = match std::fs::File::create(&dest) {
         Ok(f) => f,
         Err(e) => {
@@ -57,7 +65,7 @@ fn main() {
             return;
         }
     };
-    if let Err(e) = common::conv_io(from, to, input, output) {
-        eprintln!("failed to convert: {e}");
+    if let Err(e) = common::conv_write(value, to, output) {
+        eprintln!("failed to convert {}: {e}", src.display());
     }
 }

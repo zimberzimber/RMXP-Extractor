@@ -603,9 +603,8 @@ dependencies = [
 
 [[package]]
 name = "serde-saphyr"
-version = "0.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b9e06cddad47cc6214c0c456cf209b99a58b54223e7af2f6d4b88a5a9968499"
+version = "0.0.11"
+source = "git+https://github.com/bourumir-wyngs/serde-saphyr#dfab0a354c4230a2b977be93522ea63a1931bbb8"
 dependencies = [
  "ahash",
  "base64",

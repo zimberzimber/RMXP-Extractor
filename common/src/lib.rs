@@ -7,7 +7,6 @@ mod de;
 pub use de::DeserializeValue;
 
 use serde::Serialize;
-use std::io::{Read, Write};
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 pub enum Format {
@@ -66,12 +65,11 @@ pub enum ConvError {
     Io(#[from] std::io::Error),
 }
 
-pub fn conv_io<R, W>(from: Format, to: Format, mut input: R, mut output: W) -> Result<(), ConvError>
+pub fn conv_read<R>(from: Format, mut input: R) -> Result<alox_48::Value, ConvError>
 where
-    R: Read,
-    W: Write,
+    R: std::io::Read,
 {
-    let value: alox_48::Value = match from {
+    let value = match from {
         Format::Marshal => {
             let mut data = vec![];
             input.read_to_end(&mut data)?;
@@ -91,7 +89,13 @@ where
             value.0
         }
     };
+    Ok(value)
+}
 
+pub fn conv_write<W>(value: alox_48::Value, to: Format, mut output: W) -> Result<(), ConvError>
+where
+    W: std::io::Write,
+{
     match to {
         Format::Marshal => {
             let data = alox_48::to_bytes(value)?;

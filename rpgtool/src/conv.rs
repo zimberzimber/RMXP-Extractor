@@ -115,6 +115,17 @@ pub fn convert(args: ConvArgs) {
         };
         let input = std::io::BufReader::new(input);
 
+        let value = match common::conv_read(from, input) {
+            Ok(v) => v,
+            Err(e) => {
+                yeet!(
+                    format!("failed to parse {}: {e}", src_path.display()),
+                    pb,
+                    fail_on_error
+                )
+            }
+        };
+
         let output = match std::fs::File::create(&dest_path) {
             Ok(f) => f,
             Err(e) => {
@@ -127,7 +138,7 @@ pub fn convert(args: ConvArgs) {
         };
         let output = std::io::BufWriter::new(output);
 
-        if let Err(e) = common::conv_io(from, to, input, output) {
+        if let Err(e) = common::conv_write(value, to, output) {
             yeet!(
                 format!("failed to convert {}: {e}", src_path.display()),
                 pb,
