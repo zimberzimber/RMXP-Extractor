@@ -22,6 +22,11 @@ This breaks reference cycles and allows for complex ownership structures.
 
 Fortunately, RPG Maker data doesn't really rely on object links. Shared ownership does come up sometimes though!
 
+# Structured data
+
+`rpgtool` supports deserializing data in a more structured fashion, which avoids all of the representation quirks listed below.
+It's also compatible with Luminol too!
+
 # Representation
 
 Due to format limitations, `rpgtool` and `marshalconvert` have a special representation for different Ruby types. This representation uses `$` tags to distinguish between objects, hashes, and structs!
