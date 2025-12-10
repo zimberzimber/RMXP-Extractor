@@ -1,20 +1,34 @@
 use alox_48::Value;
-use serde::ser::SerializeMap;
+use serde::ser::{SerializeMap, SerializeSeq};
 
 pub struct SerializeValue<'a>(pub &'a Value);
 
 struct SerializeHash<'a>(&'a alox_48::RbHash);
+
+struct SerializeKV<'a>(&'a alox_48::Value, &'a alox_48::Value);
+
+impl serde::Serialize for SerializeKV<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(2))?;
+        map.serialize_entry("key", &SerializeValue(self.0))?;
+        map.serialize_entry("value", &SerializeValue(self.1))?;
+        map.end()
+    }
+}
 
 impl serde::Serialize for SerializeHash<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
         for (k, v) in self.0 {
-            map.serialize_entry(&SerializeValue(k), &SerializeValue(v))?;
+            seq.serialize_element(&SerializeKV(k, v))?;
         }
-        map.end()
+        seq.end()
     }
 }
 

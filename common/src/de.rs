@@ -213,22 +213,28 @@ impl<'de> serde::Deserialize<'de> for DeserializeString {
 struct DeserializeHash(alox_48::RbHash);
 struct HashVisitor;
 
+#[derive(serde::Deserialize)]
+struct DeserializeKV {
+    key: DeserializeValue,
+    value: DeserializeValue,
+}
+
 impl<'de> serde::de::Visitor<'de> for HashVisitor {
     type Value = alox_48::RbHash;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str("a map")
+        formatter.write_str("an array of key value pairs")
     }
 
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
-        A: serde::de::MapAccess<'de>,
+        A: serde::de::SeqAccess<'de>,
     {
-        let mut fields = alox_48::RbHash::new();
-        while let Some((k, v)) = map.next_entry::<DeserializeValue, DeserializeValue>()? {
-            fields.insert(k.0, v.0);
+        let mut hash = alox_48::RbHash::new();
+        while let Some(DeserializeKV { key, value }) = seq.next_element()? {
+            hash.insert(key.0, value.0);
         }
-        Ok(fields)
+        Ok(hash)
     }
 }
 
