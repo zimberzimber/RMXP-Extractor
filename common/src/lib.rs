@@ -46,8 +46,6 @@ impl alox_48::Serialize for Value {
     }
 }
 
-use std::sync::atomic::{AtomicBool, Ordering};
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy, clap::ValueEnum)]
 #[non_exhaustive]
 pub enum Format {
@@ -55,7 +53,7 @@ pub enum Format {
     Marshal,
     Ron,
     Yaml,
-    Saphyr,
+    // Saphyr,
 }
 
 impl Format {
@@ -80,7 +78,7 @@ impl Format {
             Format::Json => "json",
             Format::Marshal => "rxdata",
             Format::Ron => "ron",
-            Format::Yaml | Format::Saphyr => "yaml",
+            Format::Yaml /* | Format::Saphyr */ => "yaml",
         })
     }
 }
@@ -99,26 +97,29 @@ pub enum ConvError {
     RonDe(#[from] ron::de::SpannedError),
     #[error("{0}")]
     Ron(#[from] ron::Error),
-    #[error("{0}")]
-    SaphyrDe(#[from] serde_saphyr::Error),
-    #[error("{0}")]
-    SaphyrSer(#[from] serde_saphyr::ser_error::Error),
-    #[error("No YAML document was present")]
-    SaphyrNoDocument,
+    // #[error("{0}")]
+    // SaphyrDe(#[from] serde_saphyr::Error),
+    // #[error("{0}")]
+    // SaphyrSer(#[from] serde_saphyr::ser_error::Error),
+    // #[error("No YAML document was present")]
+    // SaphyrNoDocument,
     #[error("{0}")]
     Yaml(#[from] serde_yaml_ng::Error),
     #[error("{0}")]
     Io(#[from] std::io::Error),
 }
 
-static BYTES_ALLOWED: AtomicBool = AtomicBool::new(true);
+// FIXME shitty hack because serde_yaml doesn't support binary and we have no way to recover from serialization errors
+thread_local! {
+    static BYTES_ALLOWED: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+}
 
 fn set_binary_bytes_allowed(allowed: bool) {
-    BYTES_ALLOWED.store(allowed, Ordering::Relaxed);
+    BYTES_ALLOWED.set(allowed);
 }
 
 fn binary_bytes_allowed() -> bool {
-    BYTES_ALLOWED.load(Ordering::Relaxed)
+    BYTES_ALLOWED.get()
 }
 
 pub fn conv_read<R, T>(from: Format, mut input: R) -> Result<T, ConvError>
@@ -136,10 +137,10 @@ where
         }
         Format::Json => serde_json::from_reader(input)?,
         Format::Ron => ron::Options::default().from_reader(input)?,
-        Format::Saphyr => {
-            let mut iter = serde_saphyr::read(&mut input);
-            iter.next().ok_or(ConvError::SaphyrNoDocument)??
-        }
+        // Format::Saphyr => {
+        //     let mut iter = serde_saphyr::read(&mut input);
+        //     iter.next().ok_or(ConvError::SaphyrNoDocument)??
+        // }
         Format::Yaml => serde_yaml_ng::from_reader(input)?,
     };
     Ok(value)
@@ -165,9 +166,9 @@ where
             let config = ron::ser::PrettyConfig::default();
             ron::Options::default().to_io_writer_pretty(output, &value, config)?;
         }
-        Format::Saphyr => {
-            serde_saphyr::to_io_writer(&mut output, &value)?;
-        }
+        // Format::Saphyr => {
+        //     serde_saphyr::to_io_writer(&mut output, &value)?;
+        // }
         Format::Yaml => {
             let mut ser = serde_yaml_ng::Serializer::new(output);
             serde::Serialize::serialize(&value, &mut ser)?;

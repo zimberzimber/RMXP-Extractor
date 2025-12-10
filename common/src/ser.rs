@@ -60,7 +60,11 @@ impl serde::Serialize for SerializeBytes<'_> {
         if crate::binary_bytes_allowed() {
             serializer.serialize_bytes(self.0)
         } else {
-            serde::Serialize::serialize(self.0, serializer) // serializes as a seq instead
+            let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
+            for v in self.0 {
+                seq.serialize_element(v)?;
+            }
+            seq.end()
         }
     }
 }
