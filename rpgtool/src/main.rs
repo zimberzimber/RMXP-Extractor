@@ -2,7 +2,7 @@
 
 extern crate rpgtool_common as common;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use common::Format;
 use std::path::PathBuf;
 
@@ -33,13 +33,22 @@ enum Commands {
     ///
     /// Unknown game files are converted using the normal structured format.
     Structured(StructuredArgs),
+    /// Generate completions for the specified shell.
+    Completions(CompletionArgs),
+}
+
+#[derive(clap::Args)]
+struct CompletionArgs {
+    shell: clap_complete::Shell,
 }
 
 #[derive(clap::Args)]
 struct ConvArgs {
     /// The source directory.
+    #[arg(value_hint = clap_complete::ValueHint::DirPath)]
     src: PathBuf,
     /// The destination directory.
+    #[arg(value_hint = clap_complete::ValueHint::DirPath)]
     dest: PathBuf,
     /// The formats to convert from/to.
     ///
@@ -61,7 +70,7 @@ struct ConvArgs {
     ///
     // Optional, does not have to be specified.
     output_file_ext: Option<PathBuf>,
-    /// Run with a signle thread instead of multiple threads.
+    /// Run with a single thread instead of multiple threads.
     #[arg(long = "single-thread")]
     single_thread: bool,
     #[arg(long = "thread-count", conflicts_with = "single_thread")]
@@ -71,8 +80,10 @@ struct ConvArgs {
 #[derive(clap::Args)]
 struct StructuredArgs {
     /// The source directory.
+    #[arg(value_hint = clap_complete::ValueHint::DirPath)]
     src: PathBuf,
     /// The destination directory.
+    #[arg(value_hint = clap_complete::ValueHint::DirPath)]
     dest: PathBuf,
     /// The game version to use.
     game_version: GameVer,
@@ -96,7 +107,7 @@ struct StructuredArgs {
     ///
     // Optional, does not have to be specified.
     output_file_ext: Option<PathBuf>,
-    /// Run with a signle thread instead of multiple threads.
+    /// Run with a single thread instead of multiple threads.
     #[arg(long = "single-thread")]
     single_thread: bool,
     #[arg(long = "thread-count", conflicts_with = "single_thread")]
@@ -112,17 +123,21 @@ enum GameVer {
 #[derive(clap::Args)]
 struct UnpackScriptArgs {
     /// The packed script file.
+    #[arg(value_hint = clap_complete::ValueHint::DirPath)]
     file: PathBuf,
     /// The directory containing script files.
+    #[arg(value_hint = clap_complete::ValueHint::FilePath)]
     directory: PathBuf,
 }
 
 #[derive(clap::Args)]
 struct PackScriptArgs {
-    /// The packed script file.
-    file: PathBuf,
     /// The directory containing script files.
+    #[arg(value_hint = clap_complete::ValueHint::DirPath)]
     directory: PathBuf,
+    /// The packed script file.
+    #[arg(value_hint = clap_complete::ValueHint::FilePath)]
+    file: PathBuf,
 }
 
 #[allow(unused)]
@@ -132,5 +147,10 @@ fn main() {
         Commands::Pack(script_args) => pack::pack(script_args),
         Commands::Unpack(script_args) => unpack::unpack(script_args),
         Commands::Structured(structured_args) => structured::convert(structured_args),
+        Commands::Completions(CompletionArgs { shell }) => {
+            let mut cmd = Cli::command();
+            let name = cmd.get_name().to_owned();
+            clap_complete::generate(shell, &mut cmd, name, &mut std::io::stdout());
+        }
     }
 }

@@ -13,6 +13,8 @@ edition.workspace = true
 
 [dependencies]
 clap.workspace = true
+clap_complete.workspace = true
+
 alox-48.workspace = true
 serde.workspace = true
 

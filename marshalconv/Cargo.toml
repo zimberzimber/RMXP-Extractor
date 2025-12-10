@@ -15,3 +15,5 @@ edition.workspace = true
 [dependencies]
 clap.workspace = true
 rpgtool-common.workspace = true
+
+clap_complete.workspace = true

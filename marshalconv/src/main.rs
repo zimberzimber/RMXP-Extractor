@@ -9,11 +9,15 @@ use std::path::PathBuf;
 // TODO stdin?
 /// Converts Ruby marshal files to other formats, and vice versa.
 #[derive(Parser)]
-struct Args {
+struct Cli {
+    #[arg(long, exclusive = true)]
+    completions: Option<clap_complete::Shell>,
     /// The source file.
-    src: PathBuf,
+    #[arg(value_hint = clap_complete::ValueHint::FilePath, required_unless_present="completions")]
+    src: Option<PathBuf>,
     /// The destination file.
-    dest: PathBuf,
+    #[arg(value_hint = clap_complete::ValueHint::FilePath, required_unless_present="completions")]
+    dest: Option<PathBuf>,
     /// The formats to convert from/to.
     ///
     /// Input comes first.
@@ -24,13 +28,28 @@ struct Args {
 }
 
 fn main() {
-    let Args { src, dest, format } = Args::parse();
+    let Cli {
+        completions,
+        src,
+        dest,
+        format,
+    } = Cli::parse();
+
+    if let Some(shell) = completions {
+        let mut cmd = Cli::command();
+        let name = cmd.get_name().to_owned();
+        clap_complete::generate(shell, &mut cmd, name, &mut std::io::stdout());
+        return;
+    }
+
+    let src = src.expect("should be present");
+    let dest = dest.expect("should be present");
 
     let [from, to] = match format.as_deref() {
         Some(&[from, to]) => [from, to],
         None => {
             let Some((from, to)) = Format::guess(&src).zip(Format::guess(&dest)) else {
-                let mut command = Args::command();
+                let mut command = Cli::command();
                 command
                     .error(
                         ErrorKind::DisplayHelp,
