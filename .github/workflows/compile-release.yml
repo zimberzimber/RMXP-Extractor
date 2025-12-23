@@ -2,21 +2,39 @@ name: compile-release
 
 on:
   push:
-    branches: [ main ]
+    tags:
+      - '*'
 
 env:
   # Disable incremental compilation for faster from-scratch builds
   CARGO_INCREMENTAL: 0
 
 jobs:
-  build-release-ubuntu:
-    runs-on: windows-latest
+  build-release:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
-    - run: rustup update
-    - run: cargo build --release
-    - uses: actions/upload-artifact@v4
-      with:
-        path: |
-          target/release/marshalconv.exe
-          target/release/rpgtool.exe
+      - uses: actions/checkout@v5
+      - name: Build Binaries
+        run: cargo build --profile release
+      - name: Collect Binaries
+        shell: bash
+        run: |
+          mkdir dist
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            cp target/release/marshalconv.exe dist/marshalconv_windows.exe
+            cp target/release/rpgtool.exe dist/rpgtool_windows.exe
+          else
+            cp target/release/marshalconv dist/marshalconv_linux
+            cp target/release/rpgtool dist/rpgtool_linux
+          fi
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: dist/*
